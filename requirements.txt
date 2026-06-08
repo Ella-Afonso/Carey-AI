@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+google-genai
+python-dotenv
+requests
+elasticsearch
+pandas
+numpy
+mcp
+pytest
+pytest-asyncio
+ruff
