@@ -26,6 +26,7 @@ debug_*.py
 extract_*.py
 test_*.py
 out_*.txt
+*DEBUG_NOTES.md
 
 # Secrets
 backend/env.yaml
