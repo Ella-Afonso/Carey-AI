@@ -12,3 +12,18 @@ venv/
 .windsurf/
 .pytest_cache/
 backend/data/patient_log.jsonl
+
+# Agent & Workflow files
+.agent/
+agent_instructions/
+*.txt
+.gemini/
+
+# Debug and Test scripts
+debug_*.py
+extract_*.py
+test_*.py
+out_*.txt
+
+# Secrets
+backend/env.yaml

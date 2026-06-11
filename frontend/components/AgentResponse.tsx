@@ -54,18 +54,22 @@ export default function AgentResponse({ answer, trace = [] }: AgentResponseProps
     }
   };
 
-  // Pre-process to strip out prompt leaks (safety measure)
+  // Pre-process to strip out prompt leaks and redundant urgency headers (safety measure)
   const cleanAnswer = useMemo(() => {
     let cleaned = answer;
     const leakPatterns = [
       /you are a helpful ai assistant/i,
       /you are tasked with/i,
-      /you are a clinician/i
+      /you are a clinician/i,
+      /^URGENT:?\s*/i,
+      /^EMERGENCY:?\s*/i,
+      /^\*\*URGENT\*\*:?\s*/i,
+      /^###?\s*URGENT:?\s*/i
     ];
     leakPatterns.forEach(pattern => {
       cleaned = cleaned.replace(pattern, "");
     });
-    return cleaned;
+    return cleaned.trim();
   }, [answer]);
 
   // Find temporal pattern data in trace

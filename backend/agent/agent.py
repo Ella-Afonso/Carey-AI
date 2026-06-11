@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from agent.prompts import SYSTEM_PROMPT
 from agent.tools import get_tool_route
 from agent import mcp_client
+from agent import gitlab_mcp_client
 from agent import elastic_client
 from agent.safety import apply_safety_floor
 
@@ -48,6 +49,15 @@ async def _run_gemini_plan(client, model_id, message, patient_id, trace, tool_ca
     
     if is_pattern_query:
         calls.insert(3, ("detect_temporal_pattern", {"patient_id": patient_id, "timezone_offset_hours": 0}))
+
+    if is_acute:
+        project_path = os.getenv("GITLAB_PROJECT_PATH", "carey-ai-health/caregiver-alert-system")
+        calls.append(("gitlab_create_issue", {
+            "project_id": project_path,
+            "title": f"URGENT Clinical Incident: Patient {patient_id}",
+            "description": f"Acute change detected requiring clinical officer attention. Caregiver note: {message}",
+            "labels": ["clinical-alert", "urgent"]
+        }))
     
     async def run_step(step_idx, t_name, t_args):
         start = time.time()
@@ -56,22 +66,38 @@ async def _run_gemini_plan(client, model_id, message, patient_id, trace, tool_ca
         success = False
         err = None
         out_preview = ""
+        norm_res = []
         
         if route == "mcp":
             res = await mcp_client.call_tool(t_name, t_args)
             called_mcp = res.get("called_via_mcp", False)
             success = res.get("success", False)
             err = res.get("error")
-            out_preview = str(res.get("normalised_results", ""))[:150] + "..."
+            norm_res = res.get("normalised_results", [])
+            out_preview = str(norm_res)[:150] + "..."
+        elif route == "gitlab":
+            res = await gitlab_mcp_client.call_gitlab_tool(t_name, t_args)
+            called_mcp = res.get("called_via_mcp", False)
+            success = res.get("success", False)
+            err = res.get("error")
+            norm_res = res.get("normalised_results", [])
+            out_preview = str(norm_res)[:150] + "..."
         else:
             try:
                 if t_name == "log_new_observation":
                     res = elastic_client.log_new_observation(**t_args)
                 elif t_name == "detect_temporal_pattern":
                     res = elastic_client.detect_temporal_pattern(**t_args)
-                else:
+                elif t_name == "search_general_guidance":
+                    res = elastic_client.search_general_guidance(**t_args)
+                elif t_name == "search_patient_history":
+                    res = elastic_client.search_patient_history(**t_args)
+                elif t_name == "generate_clinician_summary":
                     res = elastic_client.generate_clinician_summary(**t_args)
+                else:
+                    raise ValueError(f"Unknown local tool: {t_name}")
                 success = True
+                norm_res = res if isinstance(res, list) else [res]
                 out_preview = str(res)[:150] + "..."
             except Exception as ex:
                 err = str(ex)
@@ -84,6 +110,7 @@ async def _run_gemini_plan(client, model_id, message, patient_id, trace, tool_ca
             "planner_mode": planner_mode,
             "input": t_args,
             "output_preview": out_preview,
+            "normalised_results": norm_res,
             "success": success,
             "error": err,
             "duration_ms": int((time.time() - start) * 1000)
@@ -118,7 +145,7 @@ async def _run_gemini_plan(client, model_id, message, patient_id, trace, tool_ca
 async def run_agent(message: str, patient_id: str = "demo-patient-001", use_fallback: bool = True) -> dict:
     project = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("GOOGLE_CLOUD_LOCATION")
-    model_id = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model_id = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     
     client = genai.Client(vertexai=True, project=project, location=location)
     

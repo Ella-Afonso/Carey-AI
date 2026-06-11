@@ -11,7 +11,7 @@ def test_adc():
     
     project = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("GOOGLE_CLOUD_LOCATION")
-    model_id = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model_id = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     
     if not project or not location:
         print("FAIL: Missing GOOGLE_CLOUD_PROJECT or GOOGLE_CLOUD_LOCATION in .env")

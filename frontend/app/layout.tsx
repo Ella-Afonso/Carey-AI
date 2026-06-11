@@ -6,10 +6,16 @@ export const metadata: Metadata = {
   description: 'Dementia caregiver-support AI agent using Gemini, Google Cloud, and Elastic MCP.',
 }
 
+import { AuthProvider } from '../lib/auth'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }

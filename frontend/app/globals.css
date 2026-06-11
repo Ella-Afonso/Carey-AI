@@ -91,3 +91,17 @@ body {
 .pulse-glow {
   animation: pulseGlow 4s infinite ease-in-out;
 }
+
+/* Force browsers to print backgrounds and dark theme styling exactly as they appear on screen */
+@media print {
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  body {
+    background: #020617 !important;
+    color: #f1f5f9 !important;
+  }
+}

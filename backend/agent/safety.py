@@ -142,13 +142,19 @@ def classify_escalation(history_entries: List[Dict[str, Any]], guidance_hits: Op
         if has_acute_tag or (sev >= 5 and has_confusion_or_escalation):
             is_urgent = True
             acute_count += 1
-            reasons.append(f"Retrieved patient-history entry {entry_id} contains acute_change / sudden_confusion tags with severity {sev}.")
+            prefix = "Current observation" if entry.get("source") == "caregiver_demo_input" else "Past clinical history"
+            reason = f"{prefix} indicates an acute change or sudden confusion (Severity {sev}/5)."
+            if reason not in reasons:
+                reasons.append(reason)
             grounded_in.append(entry_id)
             
         # Monitor Rule
         elif not is_urgent and (has_chronic_tag or 2 <= sev <= 4):
             is_monitor = True
-            reasons.append(f"Retrieved patient-history entry {entry_id} contains chronic pattern tags or moderate severity {sev}.")
+            prefix = "Current observation" if entry.get("source") == "caregiver_demo_input" else "Past clinical history"
+            reason = f"{prefix} indicates a chronic pattern of distress or moderate symptom severity (Severity {sev}/5)."
+            if reason not in reasons:
+                reasons.append(reason)
             grounded_in.append(entry_id)
             
     if acute_count > 1:
